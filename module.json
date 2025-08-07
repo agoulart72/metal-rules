@@ -36,7 +36,7 @@
     ],
     "styles": [
         "styles/metal-dnd5e.css",
-        "styles/stress-tracker.css"
+        "styles/stress_tracker.css"
     ],
     "languages": [
         {

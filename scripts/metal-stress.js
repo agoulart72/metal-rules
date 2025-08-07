@@ -138,7 +138,7 @@ async function setStress(actor, stressLevel) {
     
     // Force actor data preparation to recalculate penalties
     await actor.update({
-        "system.attributes.stress.value": newStressValue
+        "system.attributes.stress.value": stressLevel
     });
     
     // Get the effective penalty after recalculation

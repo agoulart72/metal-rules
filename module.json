@@ -7,7 +7,7 @@
         "name": "Metal",
         "email": "agoulart@uol.com.br"
     }],
-    "version": "1.0.3",
+    "version": "1.0.4",
     "compatibility": {
         "minimum": "12",
         "verified": "12.331",

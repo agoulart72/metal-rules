@@ -1,7 +1,7 @@
 import { register as registerRollToCastSpells } from './metal-rolltocastspells.js'
 import { register as registerStressCounter } from './metal-stress.js'
-import { register as registerAccursedClass } from './metal-accursed.js'
-import { register as registerMaledictionSystem } from './metal-maledictions.js'
+import { register as registerAccursedClass } from './class_accursed.js'
+import { register as registerMaledictionSystem } from './feature_malediction.js'
  
 Hooks.on('init', async () => {
 
@@ -20,7 +20,6 @@ _|  _| \___| \__| \__,_| _|     _| \_\ \__,_| _| \___| ____/
                                                                    
    registerRollToCastSpells()
    registerStressCounter()
-   registerStressCounter()
    registerAccursedClass()
-
+   registerMaledictionSystem()
 })

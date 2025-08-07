@@ -1,0 +1,48 @@
+{
+    "id": "metal-rules",
+    "name": "metal-rules",
+    "title": "Metal Rules - Custom modifications for 5ed Foundry VTT",
+    "description": "Simple module to allow homebrew rules for D&D 5e",
+    "authors": [{
+        "name": "Metal",
+        "email": "agoulart@uol.com.br"
+    }],
+    "version": "1.0.0",
+    "compatibility": {
+        "minimum": "12",
+        "verified": "12.331",
+        "maximum": "12"
+    },
+    "relationships": {
+        "systems": [
+            {
+                "id": "dnd5e",
+                "type": "system",
+                "compatibility": {
+                    "minimum": "3.0.1",
+                    "verified": "3.0.4"
+                }
+            }
+        ],
+        "requires": [
+            {
+                "id": "lib-wrapper",
+                "type": "module"
+            }
+        ]
+    },
+    "esmodules": [
+        "scripts/module.js"
+    ],
+    "styles": [
+        "styles/metal-dnd5e.css",
+        "styles/stress-tracker.css"
+    ],
+    "languages": [
+        {
+            "lang": "en",
+            "name": "English",
+            "path": "languages/en.json"
+        }
+    ]
+}

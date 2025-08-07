@@ -1,0 +1,7 @@
+.stress {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    position: relative;
+    height: 50px;
+}

@@ -1,0 +1,23 @@
+import { libWrapper } from "../lib/shim.js";
+
+export const moduleName = "metal-rules";
+
+export function register() {
+
+    Hooks.on("renderActorSheet5eCharacter2", function(sheet, [html]) {
+        console.log("### metal - sheet mode : ", sheet._mode)
+        // if (sheet._mode !== sheet.constructor.MODES.PLAY) return; //!Requires PLAY mode
+
+        const div = document.createElement("DIV")
+        // div.className = 'stress'
+        div.classList = "stress pips"
+        div.innerHTML = ""
+        const pip = '<button type="button" class="pip" data-n="{{ n }}" data-tooltip="{{ tooltip }}" aria-label="{{ label }}" aria-pressed="{{ filled }}"></button>'
+        for (let i = 1; i < 7; i++) {
+            div.innerHTML += pip.replace("{{ n }}", i).replace("{{ tooltip }}", "Stress Level " + i).replace("{{ label }}", "Stress " + i).replace("{{ filled }}", "false")
+        }
+
+        html.querySelector(".dnd5e2.sheet.actor.character .sheet-body .main-content .sidebar .card .stats .top").insertAdjacentElement("afterend", div)
+    });
+
+}

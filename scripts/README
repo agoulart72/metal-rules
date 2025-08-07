@@ -1,0 +1,8 @@
+CONFIG.debug.hooks = true ; // shows all hooks
+
+
+// Foundry VTT 11 Hooks 
+// https://foundryvtt.com/api/modules/hookEvents.html
+
+// 5ed repository 
+// https://github.com/foundryvtt/dnd5e

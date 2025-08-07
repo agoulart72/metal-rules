@@ -1,0 +1,3 @@
+*.zip
+*.lock
+node_modules/

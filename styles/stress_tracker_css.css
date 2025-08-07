@@ -1,0 +1,113 @@
+/* Stress Tracker Styles */
+.stress-tracker {
+    margin-top: 0.5rem;
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--dnd5e-color-card-border);
+    border-radius: 4px;
+}
+
+.stress-tracker .card-header {
+    background: var(--dnd5e-color-card-header-bg);
+    border-bottom: 1px solid var(--dnd5e-color-card-border);
+    padding: 0.25rem 0.5rem;
+}
+
+.stress-tracker .card-title {
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin: 0;
+    color: var(--dnd5e-color-card-header-text);
+}
+
+.stress-pips {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem;
+    gap: 0.25rem;
+}
+
+.stress-pip {
+    background: transparent;
+    border: 2px solid #666;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    color: #666;
+}
+
+.stress-pip:hover {
+    border-color: #999;
+    color: #999;
+    transform: scale(1.1);
+}
+
+.stress-pip.filled {
+    background: linear-gradient(135deg, #dc2626, #991b1b);
+    border-color: #dc2626;
+    color: white;
+    box-shadow: 0 0 8px rgba(220, 38, 38, 0.4);
+}
+
+.stress-pip.filled:hover {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    border-color: #ef4444;
+}
+
+/* Animation for stress changes */
+.stress-pip {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stress-pip.filled {
+    animation: stressFill 0.3s ease-out;
+}
+
+@keyframes stressFill {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 rgba(220, 38, 38, 0);
+    }
+    50% {
+        transform: scale(1.2);
+        box-shadow: 0 0 12px rgba(220, 38, 38, 0.6);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 8px rgba(220, 38, 38, 0.4);
+    }
+}
+
+/* Tooltip styling */
+.stress-pip[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    white-space: nowrap;
+    z-index: 1000;
+    margin-bottom: 0.25rem;
+}
+
+.stress-pip[data-tooltip]:hover::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.8);
+    margin-bottom: -4px;
+    z-index: 1000;
+}

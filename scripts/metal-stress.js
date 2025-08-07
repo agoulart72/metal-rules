@@ -137,7 +137,9 @@ async function setStress(actor, stressLevel) {
     await actor.setFlag('metal-rules', 'stress', stressLevel);
     
     // Force actor data preparation to recalculate penalties
-    actor.prepareData();
+    await actor.update({
+        "system.attributes.stress.value": newStressValue
+    });
     
     // Get the effective penalty after recalculation
     const effectivePenalty = actor.system.stressExhaustionPenalty || 0;

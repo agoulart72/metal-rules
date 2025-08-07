@@ -44,5 +44,8 @@
             "name": "English",
             "path": "languages/en.json"
         }
-    ]
+    ],
+    "url": "https://github.com/agoulart72/metal-rules",
+    "manifest": "https://raw.githubusercontent.com/agoulart72/metal-rules/main/module.json",
+    "download": "https://github.com/agoulart72/metal-rules/archive/refs/heads/main.zip"
 }

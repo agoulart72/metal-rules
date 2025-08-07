@@ -658,6 +658,7 @@ async function applyShroudOfDarkness(actor) {
     }]);
     
     return true;
+}
 
 async function refreshMalediction(actor, maledictionId) {
     const uses = actor.getFlag('metal-rules', 'malediction-uses') || {};

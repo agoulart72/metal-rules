@@ -5,6 +5,18 @@ export const moduleName = "metal-rules";
 export function register() {
     console.log("metal-rules | Registering Stress Counter");
 
+    // Register custom status effect icon for Stress
+    Hooks.on('init', () => {
+        const exists = CONFIG.statusEffects?.some(se => se.id === 'stress');
+        if (!exists) {
+            CONFIG.statusEffects?.push({
+                id: 'stress',
+                label: 'Stress',
+                icon: 'icons/svg/terror.svg'
+            });
+        }
+    });
+
     // Add stress to actor data preparation
     Hooks.on("dnd5e.prepareActorData", (actor) => {
         if (actor.type !== "character") return;
@@ -16,6 +28,32 @@ export function register() {
         
         // Apply stress penalties (same as exhaustion but only use the higher penalty)
         applyStressPenalties(actor);
+    });
+
+    // Apply penalty at roll-time so it always affects d20 rolls
+    Hooks.on('dnd5e.preRollAbilityTest', (actor, rollData /*, abilityId */) => {
+        addPenaltyToRollParts(rollData, actor);
+    });
+    Hooks.on('dnd5e.preRollAbilitySave', (actor, rollData /*, abilityId */) => {
+        addPenaltyToRollParts(rollData, actor);
+    });
+    Hooks.on('dnd5e.preRollSkillCheck', (actor, rollData /*, skillId */) => {
+        addPenaltyToRollParts(rollData, actor);
+    });
+    Hooks.on('dnd5e.preRollDeathSave', (actor, rollData) => {
+        addPenaltyToRollParts(rollData, actor);
+    });
+    Hooks.on('dnd5e.preRollAttack', (item, rollConfig) => {
+        if (!item?.actor) return;
+        addPenaltyToRollParts(rollConfig, item.actor);
+    });
+
+    // Update effect when exhaustion changes
+    Hooks.on('updateActor', (actor, changes) => {
+        const changedExhaustion = foundry.utils.getProperty(changes, 'system.attributes.exhaustion');
+        if (changedExhaustion !== undefined) {
+            ensureStressEffect(actor);
+        }
     });
 
     // Render the stress tracker on character sheets
@@ -73,6 +111,7 @@ function createStressPips(currentStress) {
                     class="stress-pip ${filled ? 'filled' : ''}" 
                     data-stress="${i}"
                     data-tooltip="Stress Level ${i}"
+                    role="button"
                     aria-label="Stress ${i}"
                     aria-pressed="${filled}">
                 <i class="fas fa-circle"></i>
@@ -84,6 +123,8 @@ function createStressPips(currentStress) {
 
 function addStressClickHandlers(container, actor) {
     const pips = container.querySelectorAll('.stress-pip');
+    // Ensure no tooltips are attached to pips to avoid flicker
+    pips.forEach(p => p.removeAttribute('data-tooltip'));
     
     pips.forEach(pip => {
         pip.addEventListener('click', async (event) => {
@@ -137,6 +178,7 @@ async function setStress(actor, stressLevel) {
     
     // Get the effective penalty after prepare data (flag update triggers prepare)
     const effectivePenalty = actor.system.stressExhaustionPenalty || 0;
+    await ensureStressEffect(actor);
     const exhaustionLevel = actor.system.attributes?.exhaustion || 0;
     
     // Optional: Chat message for stress changes
@@ -189,52 +231,54 @@ function applyStressPenalties(actor) {
     // Use the worse (more negative) penalty between stress and exhaustion
     const finalPenalty = Math.min(stressPenalty, exhaustionPenalty);
     
-    // Store the effective penalty for use in rolls
-    if (!actor.system.bonuses) actor.system.bonuses = {};
-    if (!actor.system.bonuses.abilities) actor.system.bonuses.abilities = {};
-    if (!actor.system.bonuses.abilities.check) actor.system.bonuses.abilities.check = "";
-    
-    // Remove any existing stress/exhaustion penalty and add the new one
-    let checkBonus = actor.system.bonuses.abilities.check || "";
-    checkBonus = checkBonus.replace(/\s*[+-]\s*@system\.stressExhaustionPenalty\s*/g, "");
-    
-    if (finalPenalty !== 0) {
-        checkBonus += (checkBonus ? " " : "") + "+ @system.stressExhaustionPenalty";
-    }
-    
-    actor.system.bonuses.abilities.check = checkBonus;
-    
-    // Also apply to attack rolls and saving throws
-    if (!actor.system.bonuses.mwak) actor.system.bonuses.mwak = {};
-    if (!actor.system.bonuses.rwak) actor.system.bonuses.rwak = {};
-    if (!actor.system.bonuses.msak) actor.system.bonuses.msak = {};
-    if (!actor.system.bonuses.rsak) actor.system.bonuses.rsak = {};
-    if (!actor.system.bonuses.save) actor.system.bonuses.save = {};
-    
-    // Clean and apply to attack bonuses
-    ["mwak", "rwak", "msak", "rsak"].forEach(attackType => {
-        let attackBonus = actor.system.bonuses[attackType].attack || "";
-        attackBonus = attackBonus.replace(/\s*[+-]\s*@system\.stressExhaustionPenalty\s*/g, "");
-        if (finalPenalty !== 0) {
-            attackBonus += (attackBonus ? " " : "") + "+ @system.stressExhaustionPenalty";
-        }
-        actor.system.bonuses[attackType].attack = attackBonus;
-    });
-    
-    // Clean and apply to saving throw bonuses
-    if (!actor.system.bonuses.abilities.save) actor.system.bonuses.abilities.save = "";
-    let saveBonus = actor.system.bonuses.abilities.save || "";
-    saveBonus = saveBonus.replace(/\s*[+-]\s*@system\.stressExhaustionPenalty\s*/g, "");
-    if (finalPenalty !== 0) {
-        saveBonus += (saveBonus ? " " : "") + "+ @system.stressExhaustionPenalty";
-    }
-    actor.system.bonuses.abilities.save = saveBonus;
-    
-    // Store the penalty value for roll formulas to use
+    // Store the penalty value for roll formulas to use (consumed by the Stress effect changes)
     actor.system.stressExhaustionPenalty = finalPenalty;
     
     // Console log for debugging
     if (stressLevel > 0 || exhaustionLevel > 0) {
         console.log(`metal-rules | ${actor.name}: Stress: ${stressLevel} (${stressPenalty}), Exhaustion: ${exhaustionLevel} (${exhaustionPenalty}), Applied: ${finalPenalty}`);
+    }
+}
+
+function getFinalStressExhaustionPenalty(actor) {
+    const stressLevel = actor.getFlag('metal-rules', 'stress') || 0;
+    const exhaustionLevel = actor.system.attributes?.exhaustion || 0;
+    const stressPenalty = stressLevel * -2;
+    const exhaustionPenalty = exhaustionLevel * -2;
+    return Math.min(stressPenalty, exhaustionPenalty);
+}
+
+function addPenaltyToRollParts(target, actor) {
+    const penalty = getFinalStressExhaustionPenalty(actor);
+    if (!penalty) return;
+    if (!Array.isArray(target.parts)) target.parts = [];
+    // Avoid duplicate insertion
+    if (!target.parts.some(p => String(p).includes('stressExhaustion'))) {
+        target.parts.push(`${penalty} /* stressExhaustion */`);
+    }
+}
+
+async function ensureStressEffect(actor) {
+    const stress = actor.getFlag('metal-rules', 'stress') || 0;
+    const exhaustionLevel = actor.system.attributes?.exhaustion || 0;
+    const finalPenalty = getFinalStressExhaustionPenalty(actor);
+
+    let effect = actor.effects.find(e => e.getFlag('metal-rules', 'stress-effect') === true);
+    const label = `Stress/Exhaustion Penalty (${finalPenalty})`;
+    const icon = 'icons/svg/terror.svg';
+    // Visual effect only; numeric penalty applied via preRoll hooks
+    const changes = [];
+
+    if (!effect) {
+        await actor.createEmbeddedDocuments('ActiveEffect', [{
+            label,
+            icon,
+            changes,
+            flags: { 'metal-rules': { 'stress-effect': true } },
+            statuses: ['stress'],
+            disabled: finalPenalty === 0
+        }]);
+    } else {
+        await effect.update({ label, changes, disabled: finalPenalty === 0 });
     }
 }

@@ -39,6 +39,7 @@
     justify-content: center;
     font-size: 0.7rem;
     color: #666;
+    user-select: none;
 }
 
 .stress-pip:hover {
@@ -84,30 +85,9 @@
 }
 
 /* Tooltip styling */
-.stress-pip[data-tooltip]:hover::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.7rem;
-    white-space: nowrap;
-    z-index: 1000;
-    margin-bottom: 0.25rem;
-}
+/* Remove custom tooltip to avoid flicker and pointer switch */
+.stress-pip::after,
+.stress-pip::before { display: none !important; }
 
-.stress-pip[data-tooltip]:hover::before {
-    content: '';
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 4px solid transparent;
-    border-top-color: rgba(0, 0, 0, 0.8);
-    margin-bottom: -4px;
-    z-index: 1000;
-}
+/* Prevent inner icon from stealing pointer events */
+.stress-pip i { pointer-events: none; }

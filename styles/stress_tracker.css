@@ -45,7 +45,6 @@
 .stress-pip:hover {
     border-color: #999;
     color: #999;
-    transform: scale(1.1);
 }
 
 .stress-pip.filled {
@@ -67,6 +66,11 @@
 
 .stress-pip.filled {
     animation: stressFill 0.3s ease-out;
+}
+
+/* Reduce focus outline flicker */
+.stress-pip:focus {
+    outline: none;
 }
 
 @keyframes stressFill {

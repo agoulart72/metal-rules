@@ -30,23 +30,7 @@ export function register() {
         applyStressPenalties(actor);
     });
 
-    // Apply penalty at roll-time so it always affects d20 rolls
-    Hooks.on('dnd5e.preRollAbilityTest', (actor, rollData /*, abilityId */) => {
-        addPenaltyToRollParts(rollData, actor);
-    });
-    Hooks.on('dnd5e.preRollAbilitySave', (actor, rollData /*, abilityId */) => {
-        addPenaltyToRollParts(rollData, actor);
-    });
-    Hooks.on('dnd5e.preRollSkillCheck', (actor, rollData /*, skillId */) => {
-        addPenaltyToRollParts(rollData, actor);
-    });
-    Hooks.on('dnd5e.preRollDeathSave', (actor, rollData) => {
-        addPenaltyToRollParts(rollData, actor);
-    });
-    Hooks.on('dnd5e.preRollAttack', (item, rollConfig) => {
-        if (!item?.actor) return;
-        addPenaltyToRollParts(rollConfig, item.actor);
-    });
+    // Penalty is applied via Active Effect; no risky roll-time mutation needed
 
     // Update effect when exhaustion changes
     Hooks.on('updateActor', (actor, changes) => {
@@ -124,11 +108,16 @@ function createStressPips(currentStress) {
 function addStressClickHandlers(container, actor) {
     const pips = container.querySelectorAll('.stress-pip');
     // Ensure no tooltips are attached to pips to avoid flicker
-    pips.forEach(p => p.removeAttribute('data-tooltip'));
+    pips.forEach(p => {
+        p.removeAttribute('data-tooltip');
+        p.title = '';
+        p.setAttribute('tabindex', '-1');
+    });
     
     pips.forEach(pip => {
         pip.addEventListener('click', async (event) => {
             event.preventDefault();
+            event.stopPropagation();
             const stressLevel = parseInt(pip.dataset.stress);
             const currentStress = actor.getFlag('metal-rules', 'stress') || 0;
             
@@ -151,6 +140,7 @@ function addStressClickHandlers(container, actor) {
         // Right-click to decrease stress
         pip.addEventListener('contextmenu', async (event) => {
             event.preventDefault();
+            event.stopPropagation();
             const currentStress = actor.getFlag('metal-rules', 'stress') || 0;
             const newStress = Math.max(0, currentStress - 1);
             await setStress(actor, newStress);
@@ -251,11 +241,18 @@ function getFinalStressExhaustionPenalty(actor) {
 function addPenaltyToRollParts(target, actor) {
     const penalty = getFinalStressExhaustionPenalty(actor);
     if (!penalty) return;
-    if (!Array.isArray(target.parts)) target.parts = [];
-    // Avoid duplicate insertion
-    if (!target.parts.some(p => String(p).includes('stressExhaustion'))) {
-        target.parts.push(`${penalty} /* stressExhaustion */`);
+    // Prefer parts array if present
+    if (Array.isArray(target.parts)) {
+        if (!target.parts.includes(String(penalty))) target.parts.push(String(penalty));
+        return;
     }
+    // Fallback: append to formula if present
+    if (typeof target.formula === 'string' && target.formula.length) {
+        if (!target.formula.includes(String(penalty))) target.formula += ` + ${penalty}`;
+        return;
+    }
+    // Last resort: create parts
+    target.parts = [String(penalty)];
 }
 
 async function ensureStressEffect(actor) {
@@ -266,8 +263,20 @@ async function ensureStressEffect(actor) {
     let effect = actor.effects.find(e => e.getFlag('metal-rules', 'stress-effect') === true);
     const label = `Stress/Exhaustion Penalty (${finalPenalty})`;
     const icon = 'icons/svg/terror.svg';
-    // Visual effect only; numeric penalty applied via preRoll hooks
-    const changes = [];
+    const changes = [
+        { key: 'system.bonuses.abilities.check', mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: finalPenalty },
+        { key: 'system.bonuses.abilities.save', mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: finalPenalty },
+        { key: 'system.bonuses.mwak.attack', mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: finalPenalty },
+        { key: 'system.bonuses.rwak.attack', mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: finalPenalty },
+        { key: 'system.bonuses.msak.attack', mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: finalPenalty },
+        { key: 'system.bonuses.rsak.attack', mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: finalPenalty }
+    ];
+    // Ensure ability-specific bonuses are also affected in v4
+    const abilityKeys = ['str','dex','con','int','wis','cha'];
+    for (const abl of abilityKeys) {
+        changes.push({ key: `system.abilities.${abl}.checkBonus`, mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: finalPenalty });
+        changes.push({ key: `system.abilities.${abl}.saveBonus`, mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: finalPenalty });
+    }
 
     if (!effect) {
         await actor.createEmbeddedDocuments('ActiveEffect', [{

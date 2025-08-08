@@ -6,7 +6,7 @@ import { register as registerMaledictionSystem } from './feature_malediction.js'
 Hooks.on('init', async () => {
 
     // CONFIG.debug.hooks = true;
-    CONFIG.CUSTOM_RULES = deepClone(CONFIG.DND5E)
+    CONFIG.CUSTOM_RULES = foundry.utils.deepClone(CONFIG.DND5E)
 
     console.log(`
  \   |        |           |       _ \          |             

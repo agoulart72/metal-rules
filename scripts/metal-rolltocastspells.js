@@ -74,7 +74,15 @@ async function metalRollToCastSpells(item, config, options) {
         await roll.evaluate();
 
         // Display the dice roll in the chat with a nice animation
-        await game.dice3d.showForRoll(roll, game.user, true, null, false);
+        if (game.dice3d?.isEnabled()) {
+            await game.dice3d.showForRoll(roll, game.user, true, null, false);
+        } else {
+            await roll.toMessage({
+                user: game.user.id,
+                speaker: ChatMessage.getSpeaker({ item }),
+                flavor: `Casting check for ${item.name}`
+            });
+        }
         
         console.log(`Spellcasting Modifier: ${spellcastingAbilityModifier}`);
         console.log(`Roll Result: ${roll.total}`);        
@@ -86,7 +94,7 @@ async function metalRollToCastSpells(item, config, options) {
 
         // Display the roll result in the chat
         ChatMessage.create({
-            user: game.user._id,
+            user: game.user.id,
             speaker: ChatMessage.getSpeaker({ item }),
             content: `<div><b>Spell DC:</b> ${spellDC} <br/><b>Casting Roll Result:</b> ${roll.total} <br/>${succesOrFailMessage} </div>`
         });

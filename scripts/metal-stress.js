@@ -9,11 +9,9 @@ export function register() {
     Hooks.on("dnd5e.prepareActorData", (actor) => {
         if (actor.type !== "character") return;
         
-        // Initialize stress if it doesn't exist
-        if (!actor.system.flags) actor.system.flags = {};
-        if (!actor.system.flags['metal-rules']) actor.system.flags['metal-rules'] = {};
-        if (actor.system.flags['metal-rules'].stress === undefined) {
-            actor.system.flags['metal-rules'].stress = 0;
+        // Ensure a default stress value via flags API instead of mutating actor.system directly
+        if (actor.getFlag('metal-rules', 'stress') === undefined) {
+            actor.setFlag('metal-rules', 'stress', 0);
         }
         
         // Apply stress penalties (same as exhaustion but only use the higher penalty)
@@ -21,14 +19,15 @@ export function register() {
     });
 
     // Render the stress tracker on character sheets
-    Hooks.on("renderActorSheet5eCharacter2", async function(sheet, [html]) {
+    Hooks.on("renderActorSheet5eCharacter2", async function(sheet, html) {
         console.log("### metal - sheet mode : ", sheet._mode);
-        
+
+        const root = html instanceof HTMLElement ? html : (html?.[0] ?? html);
         const actor = sheet.actor;
         const currentStress = actor.getFlag('metal-rules', 'stress') || 0;
-        
+
         // Remove existing stress tracker to avoid duplicates
-        html.querySelector('.stress-tracker')?.remove();
+        root.querySelector('.stress-tracker')?.remove();
 
         // Create stress tracker container
         const stressContainer = document.createElement("div");
@@ -43,7 +42,7 @@ export function register() {
         `;
 
         // Insert after the stats section
-        const insertPoint = html.querySelector(".dnd5e2.sheet.actor.character .sheet-body .main-content .sidebar .card .stats");
+        const insertPoint = root.querySelector(".dnd5e2.sheet.actor.character .sheet-body .main-content .sidebar .card .stats");
         if (insertPoint) {
             insertPoint.insertAdjacentElement("afterend", stressContainer);
             
@@ -136,12 +135,7 @@ function updateStressPips(container, stressLevel) {
 async function setStress(actor, stressLevel) {
     await actor.setFlag('metal-rules', 'stress', stressLevel);
     
-    // Force actor data preparation to recalculate penalties
-    await actor.update({
-        "system.attributes.stress.value": stressLevel
-    });
-    
-    // Get the effective penalty after recalculation
+    // Get the effective penalty after prepare data (flag update triggers prepare)
     const effectivePenalty = actor.system.stressExhaustionPenalty || 0;
     const exhaustionLevel = actor.system.attributes?.exhaustion || 0;
     
@@ -202,10 +196,10 @@ function applyStressPenalties(actor) {
     
     // Remove any existing stress/exhaustion penalty and add the new one
     let checkBonus = actor.system.bonuses.abilities.check || "";
-    checkBonus = checkBonus.replace(/\s*[+-]\s*@stressExhaustionPenalty\s*/g, "");
+    checkBonus = checkBonus.replace(/\s*[+-]\s*@system\.stressExhaustionPenalty\s*/g, "");
     
     if (finalPenalty !== 0) {
-        checkBonus += (checkBonus ? " " : "") + `${finalPenalty >= 0 ? "+" : ""}@stressExhaustionPenalty`;
+        checkBonus += (checkBonus ? " " : "") + "+ @system.stressExhaustionPenalty";
     }
     
     actor.system.bonuses.abilities.check = checkBonus;
@@ -220,20 +214,21 @@ function applyStressPenalties(actor) {
     // Clean and apply to attack bonuses
     ["mwak", "rwak", "msak", "rsak"].forEach(attackType => {
         let attackBonus = actor.system.bonuses[attackType].attack || "";
-        attackBonus = attackBonus.replace(/\s*[+-]\s*@stressExhaustionPenalty\s*/g, "");
+        attackBonus = attackBonus.replace(/\s*[+-]\s*@system\.stressExhaustionPenalty\s*/g, "");
         if (finalPenalty !== 0) {
-            attackBonus += (attackBonus ? " " : "") + `${finalPenalty >= 0 ? "+" : ""}@stressExhaustionPenalty`;
+            attackBonus += (attackBonus ? " " : "") + "+ @system.stressExhaustionPenalty";
         }
         actor.system.bonuses[attackType].attack = attackBonus;
     });
     
     // Clean and apply to saving throw bonuses
-    let saveBonus = actor.system.bonuses.save.dc || "";
-    saveBonus = saveBonus.replace(/\s*[+-]\s*@stressExhaustionPenalty\s*/g, "");
+    if (!actor.system.bonuses.abilities.save) actor.system.bonuses.abilities.save = "";
+    let saveBonus = actor.system.bonuses.abilities.save || "";
+    saveBonus = saveBonus.replace(/\s*[+-]\s*@system\.stressExhaustionPenalty\s*/g, "");
     if (finalPenalty !== 0) {
-        saveBonus += (saveBonus ? " " : "") + `${finalPenalty >= 0 ? "+" : ""}@stressExhaustionPenalty`;
+        saveBonus += (saveBonus ? " " : "") + "+ @system.stressExhaustionPenalty";
     }
-    actor.system.bonuses.save.dc = saveBonus;
+    actor.system.bonuses.abilities.save = saveBonus;
     
     // Store the penalty value for roll formulas to use
     actor.system.stressExhaustionPenalty = finalPenalty;

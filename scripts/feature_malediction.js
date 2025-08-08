@@ -407,7 +407,13 @@ async function applyEvilEye(actor) {
     }
     
     const target = targets[0];
-    const distance = canvas.grid.measureDistance(actor, target);
+    // Measure distance between token centers if possible
+    const sourceToken = actor.getActiveTokens()[0];
+    const targetToken = target?.document ? target : target?.actor?.getActiveTokens?.()[0];
+    let distance = 0;
+    if (sourceToken && targetToken) {
+        distance = canvas.grid.measureDistance(sourceToken.center, targetToken.center);
+    }
     
     if (distance > 60) {
         ui.notifications.warn("Target is too far away! Evil Eye has a range of 60 feet.");

@@ -234,7 +234,9 @@ function getFinalStressExhaustionPenalty(actor) {
     const exhaustionLevel = actor.system.attributes?.exhaustion || 0;
     const stressPenalty = stressLevel * -2;
     const exhaustionPenalty = exhaustionLevel * -2;
-    return Math.min(stressPenalty, exhaustionPenalty);
+    const final = Math.min(stressPenalty, exhaustionPenalty);
+    console.log(`metal-rules | getFinalStressExhaustionPenalty -> stress=${stressLevel} (${stressPenalty}), exhaustion=${exhaustionLevel} (${exhaustionPenalty}) => final=${final}`);
+    return final;
 }
 
 function addPenaltyToRollParts(target, actor) {
@@ -261,6 +263,7 @@ async function ensureStressEffect(actor) {
     const exhaustionPenalty = (exhaustionLevel || 0) * -2;
     const finalPenalty = Math.min(stressPenalty, exhaustionPenalty);
     const deltaPenalty = finalPenalty - exhaustionPenalty; // Only add beyond exhaustion already applied by system
+    console.log(`metal-rules | ensureStressEffect -> stress=${stress} (${stressPenalty}), exhaustion=${exhaustionLevel} (${exhaustionPenalty}), final=${finalPenalty}, deltaApplied=${deltaPenalty}`);
 
     let effect = actor.effects.find(e => e.getFlag('metal-rules', 'stress-effect') === true);
     const label = `Stress/Exhaustion Penalty (${finalPenalty})`;

@@ -94,7 +94,6 @@ function createStressPips(currentStress) {
             <button type="button" 
                     class="stress-pip ${filled ? 'filled' : ''}" 
                     data-stress="${i}"
-                    data-tooltip="Stress Level ${i}"
                     role="button"
                     aria-label="Stress ${i}"
                     aria-pressed="${filled}">
@@ -258,24 +257,27 @@ function addPenaltyToRollParts(target, actor) {
 async function ensureStressEffect(actor) {
     const stress = actor.getFlag('metal-rules', 'stress') || 0;
     const exhaustionLevel = actor.system.attributes?.exhaustion || 0;
-    const finalPenalty = getFinalStressExhaustionPenalty(actor);
+    const stressPenalty = (stress || 0) * -2;
+    const exhaustionPenalty = (exhaustionLevel || 0) * -2;
+    const finalPenalty = Math.min(stressPenalty, exhaustionPenalty);
+    const deltaPenalty = finalPenalty - exhaustionPenalty; // Only add beyond exhaustion already applied by system
 
     let effect = actor.effects.find(e => e.getFlag('metal-rules', 'stress-effect') === true);
     const label = `Stress/Exhaustion Penalty (${finalPenalty})`;
     const icon = 'icons/svg/terror.svg';
     const changes = [
-        { key: 'system.bonuses.abilities.check', mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: finalPenalty },
-        { key: 'system.bonuses.abilities.save', mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: finalPenalty },
-        { key: 'system.bonuses.mwak.attack', mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: finalPenalty },
-        { key: 'system.bonuses.rwak.attack', mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: finalPenalty },
-        { key: 'system.bonuses.msak.attack', mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: finalPenalty },
-        { key: 'system.bonuses.rsak.attack', mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: finalPenalty }
+        { key: 'system.bonuses.abilities.check', mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: deltaPenalty },
+        { key: 'system.bonuses.abilities.save', mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: deltaPenalty },
+        { key: 'system.bonuses.mwak.attack', mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: deltaPenalty },
+        { key: 'system.bonuses.rwak.attack', mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: deltaPenalty },
+        { key: 'system.bonuses.msak.attack', mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: deltaPenalty },
+        { key: 'system.bonuses.rsak.attack', mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: deltaPenalty }
     ];
     // Ensure ability-specific bonuses are also affected in v4
     const abilityKeys = ['str','dex','con','int','wis','cha'];
     for (const abl of abilityKeys) {
-        changes.push({ key: `system.abilities.${abl}.checkBonus`, mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: finalPenalty });
-        changes.push({ key: `system.abilities.${abl}.saveBonus`, mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: finalPenalty });
+        changes.push({ key: `system.abilities.${abl}.checkBonus`, mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: deltaPenalty });
+        changes.push({ key: `system.abilities.${abl}.saveBonus`, mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: deltaPenalty });
     }
 
     if (!effect) {

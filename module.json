@@ -7,7 +7,7 @@
         "name": "Metal",
         "email": "agoulart@uol.com.br"
     }],
-    "version": "1.0.9",
+    "version": "1.0.10",
     "compatibility": {
         "minimum": "12",
         "verified": "12.331",
@@ -43,6 +43,16 @@
             "lang": "en",
             "name": "English",
             "path": "languages/en.json"
+        }
+    ],
+    "packs": [
+        {
+            "name": "classes",
+            "label": "Classes",
+            "path": "packs/classes.ldb",
+            "type": "Item",
+            "system": "dnd5e",
+            "private": false
         }
     ],
     "url": "https://github.com/agoulart72/metal-rules",

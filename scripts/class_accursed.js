@@ -5,14 +5,8 @@ export const moduleName = "metal-rules";
 export function register() {
     console.log("metal-rules | Registering Accursed Class");
 
-    // Register the Accursed class data
-    Hooks.on('init', () => {
-        registerAccursedClass();
-        registerAccursedItems();
-    });
-
     // Handle Doom transformation
-    Hooks.on("renderActorSheet5eCharacter2", async function(sheet, [html]) {
+    Hooks.on("renderActorSheet5eCharacter2", async function(sheet, html) {
         const actor = sheet.actor;
         if (!isAccursed(actor)) return;
 
@@ -25,79 +19,6 @@ export function register() {
             handleDoomTransformation(item.actor);
         }
     });
-}
-
-function registerAccursedClass() {
-    // Add Accursed to class list
-    CONFIG.DND5E.classFeatures = foundry.utils.mergeObject(CONFIG.DND5E.classFeatures, {
-        "accursed": {
-            "affliction": {
-                "label": "Affliction",
-                "visible": true
-            },
-            "doom": {
-                "label": "Doom",
-                "visible": true
-            },
-            "darksenses": {
-                "label": "Dark Senses",
-                "visible": true
-            },
-            "malediction": {
-                "label": "Malediction",
-                "visible": true
-            },
-            "soulprotection": {
-                "label": "Soul Protection",
-                "visible": true
-            },
-            "relentlessdoom": {
-                "label": "Relentless Doom",
-                "visible": true
-            },
-            "persistentdoom": {
-                "label": "Persistent Doom",
-                "visible": true
-            },
-            "magicresistance": {
-                "label": "Magic Resistance",
-                "visible": true
-            },
-            "indomitablemight": {
-                "label": "Indomitable Might",
-                "visible": true
-            },
-            "anathema": {
-                "label": "Anathema",
-                "visible": true
-            }
-        }
-    });
-
-    // Add Accursed to class configuration
-    if (!CONFIG.DND5E.classes) CONFIG.DND5E.classes = {};
-    CONFIG.DND5E.classes.accursed = {
-        label: "Accursed",
-        primaryAbility: "con",
-        hitDie: 8,
-        proficiencies: {
-            armor: ["light", "medium"],
-            weapons: ["simple", "martial"],
-            savingThrows: ["con", "cha"],
-            skills: {
-                choose: 2,
-                from: ["ath", "dec", "inti", "his", "sur"]
-            }
-        },
-        spellcasting: {
-            type: "none"
-        }
-    };
-}
-
-function registerAccursedItems() {
-    // This would typically create compendium items, but for now we'll add them dynamically
-    console.log("metal-rules | Accursed items registered");
 }
 
 function isAccursed(actor) {

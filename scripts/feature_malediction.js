@@ -18,13 +18,88 @@ export function register() {
         addMaledictionTracker(sheet, html, actor);
     });
 
-    // Handle malediction usage
+    // Handle malediction usage (compendium-driven or name fallback)
     Hooks.on("dnd5e.useItem", (item, config, options) => {
-        if (item.name.startsWith("Malediction:")) {
+        const key = getItemHandlerKey(item);
+        const handler = HANDLERS[key];
+        if (handler) {
+            useMaledictionByHandler(item.actor, item, key, handler);
+            return;
+        }
+        if (item.name?.startsWith("Malediction:")) {
             handleMaledictionUse(item, item.actor);
         }
     });
 }
+// --- Dispatcher support for compendium-driven features ---
+
+const HANDLERS = {
+    'accursed.malediction.evil-eye': applyEvilEye,
+    'accursed.malediction.hex-armor': applyHexArmor,
+    'accursed.malediction.shadow-step': applyShadowStep,
+    'accursed.malediction.unholy-fury': applyUnholyFury,
+    'accursed.malediction.brutal-fury': applyBrutalFury,
+    'accursed.malediction.hex-shield': applyHexShield,
+    'accursed.malediction.improved-shadow-step': applyImprovedShadowStep,
+    'accursed.malediction.shroud-of-darkness': applyShroudOfDarkness
+};
+
+function getItemHandlerKey(item) {
+    if (!item) return undefined;
+    const byFlag = item.getFlag('metal-rules', 'handler');
+    if (byFlag) return String(byFlag).toLowerCase();
+    const ident = item.system?.identifier;
+    if (ident) return String(ident).toLowerCase();
+    return undefined;
+}
+
+async function useMaledictionByHandler(actor, item, key, handlerFn) {
+    if (!actor || !item || typeof handlerFn !== 'function') return;
+
+    // Determine usage model from item flags (defaults to doom-refresh)
+    const usesModel = item.getFlag('metal-rules', 'uses') ?? 'doom-refresh';
+
+    // Key for tracking uses on actor
+    const malKey = key || (item.name?.toLowerCase());
+    const uses = actor.getFlag('metal-rules', 'malediction-uses') || {};
+    const currentUses = Number(uses[malKey] ?? 0);
+
+    // Enforce usage constraints
+    if (usesModel === 'doom-refresh') {
+        if (currentUses <= 0) {
+            ui.notifications.warn("No uses remaining! Refresh by activating Doom or completing a long rest.");
+            return;
+        }
+    }
+    if (usesModel === 'doom-only') {
+        const doomActive = actor.getFlag('metal-rules', 'doom-active');
+        if (!doomActive) {
+            ui.notifications.warn("This malediction can only be used while in Doom form!");
+            return;
+        }
+    }
+
+    // Apply effect via handler
+    const ok = await handlerFn(actor, item);
+    if (!ok) return;
+
+    // Consume use when applicable
+    if (usesModel === 'doom-refresh') {
+        uses[malKey] = currentUses - 1;
+        await actor.setFlag('metal-rules', 'malediction-uses', uses);
+    }
+
+    // Chat summary
+    ChatMessage.create({
+        user: game.user.id,
+        speaker: ChatMessage.getSpeaker({ actor }),
+        content: `${actor.name} uses <strong>${item.name}</strong>.`,
+        type: CONST.CHAT_MESSAGE_TYPES.OTHER
+    });
+
+    actor.sheet.render();
+}
+
 
 function registerMaledictionPowers() {
     // Define all malediction powers

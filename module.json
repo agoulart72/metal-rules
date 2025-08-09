@@ -7,7 +7,7 @@
         "name": "Metal",
         "email": "agoulart@uol.com.br"
     }],
-    "version": "1.0.10",
+    "version": "1.0.11",
     "compatibility": {
         "minimum": "12",
         "verified": "12.331",
@@ -49,7 +49,7 @@
         {
             "name": "classes",
             "label": "Classes",
-            "path": "packs/classes.ldb",
+            "path": "packs/classes",
             "type": "Item",
             "system": "dnd5e",
             "private": false

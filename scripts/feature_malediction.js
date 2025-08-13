@@ -34,14 +34,14 @@ export function register() {
 // --- Dispatcher support for compendium-driven features ---
 
 const HANDLERS = {
-    'accursed.malediction.evil-eye': applyEvilEye,
-    'accursed.malediction.hex-armor': applyHexArmor,
-    'accursed.malediction.shadow-step': applyShadowStep,
-    'accursed.malediction.unholy-fury': applyUnholyFury,
-    'accursed.malediction.brutal-fury': applyBrutalFury,
-    'accursed.malediction.hex-shield': applyHexShield,
-    'accursed.malediction.improved-shadow-step': applyImprovedShadowStep,
-    'accursed.malediction.shroud-of-darkness': applyShroudOfDarkness
+    'malediction-evil-eye': applyEvilEye,
+    'malediction-hex-armor': applyHexArmor,
+    'malediction-shadow-step': applyShadowStep,
+    'malediction-unholy-fury': applyUnholyFury,
+    'malediction-brutal-fury': applyBrutalFury,
+    'malediction-hex-shield': applyHexShield,
+    'malediction-improved-shadow-step': applyImprovedShadowStep,
+    'malediction-shroud-of-darkness': applyShroudOfDarkness
 };
 
 function getItemHandlerKey(item) {
